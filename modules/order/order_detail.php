@@ -149,13 +149,16 @@ include '../../includes/header.php';
                                 <span class="badge bg-success">Tidak Ada</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <?php if ($detail['diskon_klik']): ?>
-                                <span class="badge bg-primary">50%</span>
-                                <?php else: ?>
-                                <span class="badge bg-secondary">Tidak</span>
-                                <?php endif; ?>
-                            </td>
+							<td>
+    <?php if ($detail['tanpa_biaya_klik']): ?>
+    <span class="badge bg-danger">Tanpa Biaya Klik</span>
+    <?php elseif ($detail['diskon_klik']): ?>
+    <span class="badge bg-primary"><?php echo $detail['diskon_persen']; ?>%</span>
+    <?php else: ?>
+    <span class="badge bg-secondary">Tidak</span>
+    <?php endif; ?>
+</td>
+								
                             <td><?php echo formatRupiah($detail['subtotal']); ?></td>
                         </tr>
                         <?php endforeach; ?>

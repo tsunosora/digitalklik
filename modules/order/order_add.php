@@ -87,31 +87,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $id_mesin = (int)$_POST['mesin'][$i];
                 $jumlah = (int)$_POST['jumlah'][$i];
                 
-                // Periksa apakah ada reject
-                $id_reject = !empty($_POST['reject'][$i]) ? (int)$_POST['reject'][$i] : null;
-                $diskon_klik = isset($_POST['diskon_klik'][$i]) ? 1 : 0;
-                
-                // Ambil harga klik
-                $sql = "SELECT biaya_klik FROM jenis_cetak WHERE id_jenis = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("i", $id_jenis);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $row = $result->fetch_assoc();
-                $biaya_klik = $row['biaya_klik'];
-                
-                // Hitung subtotal
-                $subtotal = $biaya_klik * $jumlah;
-                if ($diskon_klik && $id_reject) {
-                    $subtotal = $subtotal * 0.5; // Diskon 50% jika ada reject
-                }
-                
-                // Simpan detail order
-                $sql = "INSERT INTO detail_order (id_order, id_bahan, id_jenis, id_mesin, jumlah, id_reject, diskon_klik, subtotal) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("iiiiiiid", $id_order, $id_bahan, $id_jenis, $id_mesin, $jumlah, $id_reject, $diskon_klik, $subtotal);
-                $stmt->execute();
+// Dalam blok untuk memproses detail order, ubah:
+
+// Periksa apakah ada reject
+$id_reject = !empty($_POST['reject'][$i]) ? (int)$_POST['reject'][$i] : null;
+$diskon_klik = isset($_POST['diskon_klik'][$i]) ? 1 : 0;
+$diskon_persen = isset($_POST['diskon_persen'][$i]) ? (int)$_POST['diskon_persen'][$i] : 50; // Default 50%
+$tanpa_biaya_klik = isset($_POST['tanpa_biaya_klik'][$i]) ? 1 : 0;
+
+// Ambil harga klik
+$sql = "SELECT biaya_klik FROM jenis_cetak WHERE id_jenis = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $id_jenis);
+$stmt->execute();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
+$biaya_klik = $row['biaya_klik'];
+
+// Hitung subtotal
+if ($tanpa_biaya_klik) {
+    $subtotal = 0; // Tanpa biaya klik
+} else {
+    $subtotal = $biaya_klik * $jumlah;
+    if ($diskon_klik && $id_reject) {
+        $subtotal = $subtotal * (1 - ($diskon_persen / 100)); // Terapkan diskon sesuai persentase
+    }
+}
+
+// Simpan detail order (tambahkan kolom diskon_persen dan tanpa_biaya_klik)
+$sql = "INSERT INTO detail_order (id_order, id_bahan, id_jenis, id_mesin, jumlah, id_reject, diskon_klik, diskon_persen, tanpa_biaya_klik, subtotal) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("iiiiiiiiid", $id_order, $id_bahan, $id_jenis, $id_mesin, $jumlah, $id_reject, $diskon_klik, $diskon_persen, $tanpa_biaya_klik, $subtotal);
+$stmt->execute();
                 
                 // Update stok bahan
                 updateStok($id_bahan, $jumlah, $conn);
@@ -241,35 +249,46 @@ include '../../includes/header.php';
                                 </button>
                             </div>
                             
-                            <div id="reject-div-0" class="col-12 d-none mt-2">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="reject-0" class="form-label">Reject Mesin</label>
-                                            <select class="form-select" id="reject-0" name="reject[0]">
-                                                <option value="">Tidak Ada Reject</option>
-                                                <?php foreach ($rejects as $reject): ?>
-                                                <option value="<?php echo $reject['id_reject']; ?>">
-                                                    <?php echo $reject['nama_reject']; ?>
-                                                </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check mt-4">
-                                            <input class="form-check-input" type="checkbox" id="diskon_klik-0" name="diskon_klik[0]">
-                                            <label class="form-check-label" for="diskon_klik-0">
-                                                Diskon Biaya Klik
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div id="reject-div-0" class="col-12 d-none mt-2">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="reject-0" class="form-label">Reject Mesin</label>
+                <select class="form-select" id="reject-0" name="reject[0]">
+                    <option value="">Tidak Ada Reject</option>
+                    <?php foreach ($rejects as $reject): ?>
+                    <option value="<?php echo $reject['id_reject']; ?>">
+                        <?php echo $reject['nama_reject']; ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="diskon_persen-0" class="form-label">Persentase Diskon</label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="diskon_persen-0" name="diskon_persen[0]" min="0" max="100" value="50">
+                    <span class="input-group-text">%</span>
                 </div>
-                
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" id="diskon_klik-0" name="diskon_klik[0]">
+                <label class="form-check-label" for="diskon_klik-0">
+                    Terapkan Diskon
+                </label>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="tanpa_biaya_klik-0" name="tanpa_biaya_klik[0]" onchange="toggleTanpaBiaya(this, 0)">
+                <label class="form-check-label" for="tanpa_biaya_klik-0">
+                    Tanpa Biaya Klik
+                </label>
+            </div>
+        </div>
+    </div>
+</div>                
                 <div class="mb-4">
                     <button type="button" class="btn btn-success" onclick="addOrderItem()">
                         <i class="fas fa-plus me-2"></i>Tambah Item
