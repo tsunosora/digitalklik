@@ -1,6 +1,6 @@
 <?php
 // laporan.php - Halaman laporan
-require_once '/includes/config.php';
+require_once '../includes/config.php';
 checkLogin();
 
 // Cek akses admin
@@ -145,7 +145,7 @@ if (isset($_GET['generate'])) {
 
 $conn->close();
 
-include 'header.php';
+include '../includes/header.php';
 ?>
 
 <div class="container-fluid p-4">
@@ -387,4 +387,4 @@ function printReport() {
 }
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

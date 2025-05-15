@@ -1,15 +1,3 @@
-<?php
-// Definisikan base URL relatif dari direktori root
-$root_path = $_SERVER['DOCUMENT_ROOT'];
-$current_path = dirname($_SERVER['SCRIPT_FILENAME']);
-$relative_path = str_replace($root_path, '', $current_path);
-$depth = substr_count($relative_path, '/');
-$base_url = str_repeat('../', max(0, $depth - 1));
-
-// Untuk lokasi file saat ini (untuk menandai menu aktif)
-$current_file = basename($_SERVER['SCRIPT_FILENAME']);
-?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -67,7 +55,7 @@ $current_file = basename($_SERVER['SCRIPT_FILENAME']);
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="<?php echo $base_url; ?>index.php">
+            <a class="navbar-brand" href="<?php echo BASE_URL; ?>index.php">
                 <i class="fas fa-print me-2"></i>Digital Printing
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -82,16 +70,16 @@ $current_file = basename($_SERVER['SCRIPT_FILENAME']);
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <?php if($_SESSION['user']['role'] == 'admin'): ?>
-                            <li><a class="dropdown-item" href="<?php echo $base_url; ?>modules/master/cabang.php">Kelola Cabang</a></li>
-                            <li><a class="dropdown-item" href="<?php echo $base_url; ?>laporan/laporan.php">Laporan</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/master/cabang.php">Kelola Cabang</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>laporan/laporan.php">Laporan</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <?php endif; ?>
-                            <li><a class="dropdown-item" href="<?php echo $base_url; ?>logout.php">Logout</a></li>
+                            <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>logout.php">Logout</a></li>
                         </ul>
                     </li>
                     <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo $base_url; ?>login.php">Login</a>
+                        <a class="nav-link" href="<?php echo BASE_URL; ?>login.php">Login</a>
                     </li>
                     <?php endif; ?>
                 </ul>
@@ -105,35 +93,35 @@ $current_file = basename($_SERVER['SCRIPT_FILENAME']);
             <div class="col-md-3 col-lg-2 p-0 sidebar">
                 <div class="d-flex flex-column">
                     <?php if($_SESSION['user']['role'] == 'admin'): ?>
-                    <a href="<?php echo $base_url; ?>index.php" class="<?php echo ($current_file == 'index.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>index.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'index.php') ? 'active' : ''; ?>">
                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/cabang.php" class="<?php echo ($current_file == 'cabang.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/cabang.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'cabang.php') ? 'active' : ''; ?>">
                         <i class="fas fa-building me-2"></i>Cabang
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/mesin.php" class="<?php echo ($current_file == 'mesin.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/mesin.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'mesin.php') ? 'active' : ''; ?>">
                         <i class="fas fa-print me-2"></i>Mesin
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/bahan.php" class="<?php echo ($current_file == 'bahan.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/bahan.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'bahan.php') ? 'active' : ''; ?>">
                         <i class="fas fa-box me-2"></i>Bahan
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/jenis_cetak.php" class="<?php echo ($current_file == 'jenis_cetak.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/jenis_cetak.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'jenis_cetak.php') ? 'active' : ''; ?>">
                         <i class="fas fa-list me-2"></i>Jenis Cetak
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/reject.php" class="<?php echo ($current_file == 'reject.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/reject.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'reject.php') ? 'active' : ''; ?>">
                         <i class="fas fa-exclamation-triangle me-2"></i>Reject Mesin
                     </a>
-                    <a href="<?php echo $base_url; ?>modules/master/users.php" class="<?php echo ($current_file == 'users.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/master/users.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'users.php') ? 'active' : ''; ?>">
                         <i class="fas fa-users me-2"></i>Pengguna
                     </a>
                     <?php endif; ?>
                     
-                    <a href="<?php echo $base_url; ?>modules/order/orders.php" class="<?php echo (in_array($current_file, ['orders.php', 'order_add.php', 'order_edit.php', 'order_detail.php'])) ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>modules/order/orders.php" class="<?php echo (in_array(basename($_SERVER['SCRIPT_FILENAME']), ['orders.php', 'order_add.php', 'order_edit.php', 'order_detail.php'])) ? 'active' : ''; ?>">
                         <i class="fas fa-shopping-cart me-2"></i>Order
                     </a>
                     
                     <?php if($_SESSION['user']['role'] == 'admin'): ?>
-                    <a href="<?php echo $base_url; ?>laporan/laporan.php" class="<?php echo ($current_file == 'laporan.php') ? 'active' : ''; ?>">
+                    <a href="<?php echo BASE_URL; ?>laporan/laporan.php" class="<?php echo (basename($_SERVER['SCRIPT_FILENAME']) == 'laporan.php') ? 'active' : ''; ?>">
                         <i class="fas fa-chart-bar me-2"></i>Laporan
                     </a>
                     <?php endif; ?>

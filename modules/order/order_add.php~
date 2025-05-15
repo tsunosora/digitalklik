@@ -1,6 +1,6 @@
 <?php
 // order_add.php - Tambah order baru
-require_once '../../includes/config.php';
+require_once '/includes/config.php';
 checkLogin();
 
 $conn = connectDB();
@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 $conn->close();
 
-include '../../includes/header.php';
+include 'header.php';
 ?>
 
 <div class="container-fluid p-4">
@@ -292,4 +292,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php include 'footer.php'; ?>

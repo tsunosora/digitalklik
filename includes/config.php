@@ -38,7 +38,7 @@ function getCabangAktif() {
 // Fungsi untuk memeriksa login
 function checkLogin() {
     if (!isset($_SESSION['user'])) {
-        header("Location: login.php");
+        header("Location: " . BASE_URL . "login.php");
         exit;
     }
 }

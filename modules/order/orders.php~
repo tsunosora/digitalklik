@@ -1,6 +1,6 @@
 <?php
 // orders.php - Daftar order
-require_once '../../includes/config.php';
+require_once '/includes/config.php';
 checkLogin();
 
 $conn = connectDB();
@@ -39,7 +39,7 @@ while ($row = $result->fetch_assoc()) {
 
 $conn->close();
 
-include '../../includes/header.php';
+include 'header.php';
 ?>
 
 <div class="container-fluid p-4">
@@ -123,4 +123,4 @@ include '../../includes/header.php';
     </div>
 </div>
 
-<?php include '../../includes/footer.php'; ?>
+<?php include 'footer.php'; ?>

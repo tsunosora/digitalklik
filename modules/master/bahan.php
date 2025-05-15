@@ -1,6 +1,6 @@
 <?php
 // bahan.php - Kelola bahan
-require_once '/includes/config.php';
+require_once '../../includes/config.php';
 checkLogin();
 
 // Cek akses admin
@@ -80,7 +80,7 @@ while ($row = $result->fetch_assoc()) {
 
 $conn->close();
 
-include 'header.php';
+include '../../includes/header.php';
 ?>
 
 <div class="container-fluid p-4">
@@ -247,4 +247,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include '../../includes/footer.php'; ?>

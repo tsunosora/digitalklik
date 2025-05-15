@@ -1,6 +1,6 @@
 <?php
 // order_edit.php - Edit order
-require_once '../../includes/config.php';
+require_once '/includes/config.php';
 checkLogin();
 
 if (!isset($_GET['id'])) {
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 $conn->close();
 
-include '../../includes/header.php';
+include 'header.php';
 ?>
 
 <div class="container-fluid p-4">
@@ -429,4 +429,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php include 'footer.php'; ?>
