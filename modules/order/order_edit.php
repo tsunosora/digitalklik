@@ -1,58 +1,16 @@
 <?php
-// order_edit.php - Edit order
+// order_add.php - Tambah order baru
 require_once '../../includes/config.php';
 checkLogin();
 
-if (!isset($_GET['id'])) {
-    header("Location: orders.php");
-    exit;
-}
-
-$id_order = (int)$_GET['id'];
 $conn = connectDB();
 $error = '';
 $success = '';
 
-// Ambil data order
-$sql = "SELECT o.*, c.nama_cabang 
-        FROM orders o 
-        JOIN cabang c ON o.id_cabang = c.id_cabang 
-        WHERE o.id_order = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id_order);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows == 0) {
-    header("Location: orders.php");
-    exit;
-}
-
-$order = $result->fetch_assoc();
-
-// Cek akses untuk operator
-if ($_SESSION['user']['role'] == 'operator' && $_SESSION['cabang'] != $order['id_cabang']) {
-    header("Location: orders.php");
-    exit;
-}
-
-$id_cabang = $order['id_cabang'];
-
-// Ambil detail order
-$sql = "SELECT do.*, b.nama_bahan, b.ukuran, jc.nama_jenis, jc.biaya_klik, m.nama_mesin, rm.nama_reject 
-        FROM detail_order do 
-        JOIN bahan b ON do.id_bahan = b.id_bahan 
-        JOIN jenis_cetak jc ON do.id_jenis = jc.id_jenis 
-        JOIN mesin m ON do.id_mesin = m.id_mesin 
-        LEFT JOIN reject_mesin rm ON do.id_reject = rm.id_reject 
-        WHERE do.id_order = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id_order);
-$stmt->execute();
-$result = $stmt->get_result();
-$detailOrders = [];
-while ($row = $result->fetch_assoc()) {
-    $detailOrders[] = $row;
+// Ambil data cabang aktif
+$id_cabang = $_SESSION['cabang'];
+if ($_SESSION['user']['role'] == 'admin' && isset($_GET['cabang'])) {
+    $id_cabang = (int)$_GET['cabang'];
 }
 
 // Ambil data bahan
@@ -109,19 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $conn->begin_transaction();
         try {
-            // Update data order
-            $sql = "UPDATE orders SET nomor_nota = ?, nama_customer = ? WHERE id_order = ?";
+            // Simpan data order
+            $sql = "INSERT INTO orders (nomor_nota, nama_customer, id_cabang) VALUES (?, ?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ssi", $nomor_nota, $nama_customer, $id_order);
+            $stmt->bind_param("ssi", $nomor_nota, $nama_customer, $id_cabang);
             $stmt->execute();
+            $id_order = $conn->insert_id;
             
-            // Hapus semua detail order lama
-            $sql = "DELETE FROM detail_order WHERE id_order = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("i", $id_order);
-            $stmt->execute();
-            
-            // Simpan detail order baru
+            // Simpan detail order
             $total_biaya = 0;
             
             for ($i = 1; $i <= count($_POST['bahan']); $i++) {
@@ -139,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $diskon_klik = isset($_POST['diskon_klik'][$i]) ? 1 : 0;
                 $diskon_persen = isset($_POST['diskon_persen'][$i]) ? (int)$_POST['diskon_persen'][$i] : 50; // Default 50%
                 $tanpa_biaya_klik = isset($_POST['tanpa_biaya_klik'][$i]) ? 1 : 0;
-                
+
                 // Ambil harga klik
                 $sql = "SELECT biaya_klik FROM jenis_cetak WHERE id_jenis = ?";
                 $stmt = $conn->prepare($sql);
@@ -148,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $result = $stmt->get_result();
                 $row = $result->fetch_assoc();
                 $biaya_klik = $row['biaya_klik'];
-                
+
                 // Hitung subtotal
                 if ($tanpa_biaya_klik) {
                     $subtotal = 0; // Tanpa biaya klik
@@ -158,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $subtotal = $subtotal * (1 - ($diskon_persen / 100)); // Terapkan diskon sesuai persentase
                     }
                 }
-                
+
                 // Simpan detail order
                 $sql = "INSERT INTO detail_order (id_order, id_bahan, id_jenis, id_mesin, jumlah, id_reject, diskon_klik, diskon_persen, tanpa_biaya_klik, subtotal) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -179,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute();
             
             $conn->commit();
-            $success = "Order berhasil diperbarui!";
+            $success = "Order berhasil disimpan!";
             
             // Redirect ke halaman detail order
             header("Location: order_detail.php?id=" . $id_order . "&success=1");
@@ -199,7 +152,7 @@ include '../../includes/header.php';
 <div class="container-fluid p-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h2><i class="fas fa-edit me-2"></i>Edit Order</h2>
+            <h2><i class="fas fa-plus-circle me-2"></i>Tambah Order Baru</h2>
             <hr>
         </div>
     </div>
@@ -218,7 +171,7 @@ include '../../includes/header.php';
     
     <div class="card">
         <div class="card-header bg-white">
-            <h5 class="mb-0">Form Edit Order</h5>
+            <h5 class="mb-0">Form Order Baru</h5>
         </div>
         <div class="card-body">
             <form method="post" action="">
@@ -226,13 +179,13 @@ include '../../includes/header.php';
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="nomor_nota" class="form-label">Nomor Nota</label>
-                            <input type="text" class="form-control" id="nomor_nota" name="nomor_nota" value="<?php echo $order['nomor_nota']; ?>" required>
+                            <input type="text" class="form-control" id="nomor_nota" name="nomor_nota" required>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="nama_customer" class="form-label">Nama Customer</label>
-                            <input type="text" class="form-control" id="nama_customer" name="nama_customer" value="<?php echo $order['nama_customer']; ?>" required>
+                            <input type="text" class="form-control" id="nama_customer" name="nama_customer" required>
                         </div>
                     </div>
                 </div>
@@ -240,110 +193,12 @@ include '../../includes/header.php';
                 <h5 class="mb-3">Item Order</h5>
                 
                 <div id="order-items">
-                    <!-- Tampilkan item order yang sudah ada -->
-                    <?php $index = 1; foreach ($detailOrders as $detail): ?>
-                    <div class="order-item row mb-4 align-items-end border-bottom pb-3">
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="bahan-<?php echo $index; ?>" class="form-label">Bahan</label>
-                                <select class="form-select" id="bahan-<?php echo $index; ?>" name="bahan[<?php echo $index; ?>]" required>
-                                    <option value="">Pilih Bahan</option>
-                                    <?php foreach ($bahans as $bahan): ?>
-                                    <option value="<?php echo $bahan['id_bahan']; ?>" <?php echo ($detail['id_bahan'] == $bahan['id_bahan']) ? 'selected' : ''; ?>>
-                                        <?php echo $bahan['nama_bahan'] . ' ' . $bahan['ukuran'] . ' (Stok: ' . $bahan['stok'] . ')'; ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="jenis_cetak-<?php echo $index; ?>" class="form-label">Jenis Cetak</label>
-                                <select class="form-select" id="jenis_cetak-<?php echo $index; ?>" name="jenis_cetak[<?php echo $index; ?>]" onchange="updateHarga(this, <?php echo $index; ?>)" required>
-                                    <option value="">Pilih Jenis Cetak</option>
-                                    <?php foreach ($jenisCetaks as $jenis): ?>
-                                    <option value="<?php echo $jenis['id_jenis']; ?>" data-biaya="<?php echo $jenis['biaya_klik']; ?>" <?php echo ($detail['id_jenis'] == $jenis['id_jenis']) ? 'selected' : ''; ?>>
-                                        <?php echo $jenis['nama_jenis'] . ' (' . formatRupiah($jenis['biaya_klik']) . '/klik)'; ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <div class="mt-1">
-                                    <small>Biaya Klik: <span id="biaya-klik-<?php echo $index; ?>"><?php echo formatRupiah($detail['biaya_klik']); ?></span></small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <label for="jumlah-<?php echo $index; ?>" class="form-label">Jumlah</label>
-                                <input type="number" class="form-control" id="jumlah-<?php echo $index; ?>" name="jumlah[<?php echo $index; ?>]" min="1" value="<?php echo $detail['jumlah']; ?>" required>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="mesin-<?php echo $index; ?>" class="form-label">Mesin</label>
-                                <select class="form-select" id="mesin-<?php echo $index; ?>" name="mesin[<?php echo $index; ?>]" onchange="toggleReject(this, <?php echo $index; ?>)" required>
-                                    <option value="">Pilih Mesin</option>
-                                    <?php foreach ($mesins as $mesin): ?>
-                                    <option value="<?php echo $mesin['id_mesin']; ?>" <?php echo ($detail['id_mesin'] == $mesin['id_mesin']) ? 'selected' : ''; ?>>
-                                        <?php echo $mesin['nama_mesin']; ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-1">
-                            <button type="button" class="btn btn-danger" onclick="removeOrderItem(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        
-                        <div id="reject-div-<?php echo $index; ?>" class="col-12 mt-2 <?php echo ($detail['id_reject']) ? '' : 'd-none'; ?>">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="reject-<?php echo $index; ?>" class="form-label">Reject Mesin</label>
-                                        <select class="form-select" id="reject-<?php echo $index; ?>" name="reject[<?php echo $index; ?>]">
-                                            <option value="">Tidak Ada Reject</option>
-                                            <?php foreach ($rejects as $reject): ?>
-                                            <option value="<?php echo $reject['id_reject']; ?>" <?php echo ($detail['id_reject'] == $reject['id_reject']) ? 'selected' : ''; ?>>
-                                                <?php echo $reject['nama_reject']; ?>
-                                            </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="diskon_persen-<?php echo $index; ?>" class="form-label">Persentase Diskon</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="diskon_persen-<?php echo $index; ?>" name="diskon_persen[<?php echo $index; ?>]" min="0" max="100" value="<?php echo isset($detail['diskon_persen']) ? $detail['diskon_persen'] : 50; ?>">
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" id="diskon_klik-<?php echo $index; ?>" name="diskon_klik[<?php echo $index; ?>]" <?php echo ($detail['diskon_klik']) ? 'checked' : ''; ?>>
-                                        <label class="form-check-label" for="diskon_klik-<?php echo $index; ?>">
-                                            Terapkan Diskon
-                                        </label>
-                                    </div>
-                                    <div class="form-check mt-2">
-                                        <input class="form-check-input" type="checkbox" id="tanpa_biaya_klik-<?php echo $index; ?>" name="tanpa_biaya_klik[<?php echo $index; ?>]" onchange="toggleTanpaBiaya(this, <?php echo $index; ?>)" <?php echo isset($detail['tanpa_biaya_klik']) && $detail['tanpa_biaya_klik'] ? 'checked' : ''; ?>>
-                                        <label class="form-check-label" for="tanpa_biaya_klik-<?php echo $index; ?>">
-                                            Tanpa Biaya Klik
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <?php $index++; endforeach; ?>
+                    <!-- Items will be added here by JavaScript -->
                 </div>
                 
                 <!-- Template item order - akan diclone dengan JS -->
                 <div id="order-item-template" class="d-none">
-                    <div class="row mb-4 align-items-end border-bottom pb-3">
+                    <div class="order-item row mb-4 align-items-end border-bottom pb-3">
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label for="bahan-0" class="form-label">Bahan</label>
@@ -448,8 +303,8 @@ include '../../includes/header.php';
                 </div>
                 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="order_detail.php?id=<?php echo $id_order; ?>" class="btn btn-secondary me-md-2">Batal</a>
-                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    <a href="orders.php" class="btn btn-secondary me-md-2">Batal</a>
+                    <button type="submit" class="btn btn-primary">Simpan Order</button>
                 </div>
             </form>
         </div>
@@ -458,18 +313,8 @@ include '../../includes/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Jika tidak ada item order, tambahkan satu item kosong
-    if (document.querySelectorAll('.order-item').length === 0) {
-        addOrderItem();
-    }
-    
-    // Inisialisasi status tombol Tanpa Biaya Klik
-    document.querySelectorAll('[id^="tanpa_biaya_klik-"]').forEach(function(checkbox) {
-        if (checkbox.checked) {
-            let index = checkbox.id.split('-')[1];
-            toggleTanpaBiaya(checkbox, index);
-        }
-    });
+    // Tambahkan item order pertama saat halaman dimuat
+    addOrderItem();
 });
 </script>
 
